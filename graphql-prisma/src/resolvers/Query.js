@@ -15,25 +15,23 @@ const Query = {
   },
   posts(parent, args, { db, prisma }, info){
     let query = {};
-
-    if(args.query){
+console.log('args', args);
+   
       query.where = {
-          OR: [
+          published: true
+        }
+        if(args.query){
+          query.where.OR = [
             { title: args.query },
             { body: args.query }
           ]
         }
-      }
+
     
     return prisma.query.posts(query, info)
   },
   comments(parent, args, { db, prisma }, info){
      return prisma.query.posts(null, info)
-    // if(args.query){
-    //   return db.comments.filter(comment => comment.text.toLowerCase().includes(args.query))
-    // } else {
-    //   return db.comments
-    // }
   },    
 };
 
