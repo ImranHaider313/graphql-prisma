@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import generateToken from '../utils/generateToken';
 import getUserId  from '../utils/getUserId';
+import hashPassword from '../utils/hashPassword';
 
 const Mutation = {
   async createUser(parent, args, { db, prisma }, info){
@@ -13,7 +14,7 @@ const Mutation = {
       throw new Error("Email already exists");
     }
     
-    const password = await bcrypt.hash(args.data.password, 10);
+    const password = await hashPassword(args.data.password);
     const user = prisma.mutation.createUser({
         data: {
         ...args.data,
@@ -23,7 +24,7 @@ const Mutation = {
 
     return {
       user,
-      token: jwt.sign({ userId: user.id }, 'thisissecret')
+      token: generateToken(user.id)
     }
   },
   async login(parent, args, {prisma}, info){
@@ -44,7 +45,7 @@ const Mutation = {
 
     return{
       user,
-      token: jwt.sign({userId: user.id}, 'thisissecret')
+      token: generateToken(user.id)
     }
 
   },
@@ -55,14 +56,16 @@ const Mutation = {
       id: userId
     }}, info)
   },
-  updateUser(parent, args, { prisma, request }, info){
+ async updateUser(parent, args, { prisma, request }, info){
     const userId = getUserId(request)
+    let data = args.data;
 
+    if(data.password){
+      data.password = await hashPassword(data.password);
+    }
     return prisma.mutation.updateUser({
       where: {id: userId},
-      data: {
-        name: args.data.name
-      }
+      data
     }, info)
   },
 async createPost(parent, args, { prisma, request }, info){  
@@ -102,18 +105,32 @@ async updatePost(parent, args, { prisma, request }, info){
   const userId = getUserId(request)
   
   const postExists = await prisma.exists.Post({
- 
       id: args.id,
       author: {
         id: userId
       }
-    
   })
+
 
   if(!postExists){
     throw new Error("Post does not exists");
   }
 
+  const isPublished = await prisma.exists.Post({
+    id: args.id,
+    published: true
+})
+
+  if (isPublished && args.data.published === false) {
+    const deletingCOmments = await prisma.mutation.deleteManyComments({
+      where: {
+        post: {
+          id: args.id
+        }
+      }
+    })
+    console.log("deletingCOmments", deletingCOmments);
+  }
   return prisma.mutation.updatePost({
     where: {id: args.id},
     data: {  ...args.data }
@@ -124,19 +141,18 @@ async createComment(parent, args, { prisma, request }, info){
   
   const postExists = await prisma.exists.Post({
       id: args.data.post,
-      author: {
-        id: userId
-    }
+      published: true
   })
 
   if(!postExists){
     throw new Error("Post does not exists");
   }
+  console.log('data', args.data);
   const newComment = await prisma.mutation.createComment({data: {
     ...args.data,
     author: {
       connect: {
-        id: args.data.author
+        id: userId
       }},
       post: {
         connect: {
@@ -145,6 +161,7 @@ async createComment(parent, args, { prisma, request }, info){
     }
   }}, info)
   
+  console.log({ newComment});
   return newComment
 },
 

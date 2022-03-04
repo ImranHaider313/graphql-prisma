@@ -24,6 +24,7 @@ input LoginUserInput {
 type Subscription {
   comment(postId: ID!): commentSubscriptionPayload!
   post: postSubscriptionPayload!
+  myPost: postSubscriptionPayload!
 }
 
 input createUserInput {
@@ -42,6 +43,7 @@ input updateUserInput {
   name: String
   email: String
   age: Int
+  password: String
 }
 
 input createPostInput {
@@ -59,7 +61,6 @@ input updatePostInput {
 input createCommentInput {
   text: String!
   post: ID!
-  author: ID!
 }
 
 input updateCommentInput {

@@ -6,7 +6,6 @@ const Query = {
         query.where = {
             OR: [
               { name: args.query },
-              { email: args.query }
             ]
           }
         }
