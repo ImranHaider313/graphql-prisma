@@ -1,6 +1,8 @@
 const Query = {
   users(parent, args, { db, prisma }, info){
-      let query = {};
+      let query = {
+        orderBy: args.orderBy
+      };
 
       if(args.query){
         query.where = {
@@ -13,12 +15,12 @@ const Query = {
       return prisma.query.users(query, info)
   },
   posts(parent, args, { db, prisma }, info){
-    let query = {};
-console.log('args', args);
+    let query = { orderBy: args.orderBy };
    
       query.where = {
           published: true
         }
+        
         if(args.query){
           query.where.OR = [
             { title: args.query },
@@ -30,7 +32,8 @@ console.log('args', args);
     return prisma.query.posts(query, info)
   },
   comments(parent, args, { db, prisma }, info){
-     return prisma.query.posts(null, info)
+    let query = { orderBy: args.orderBy };
+     return prisma.query.comments(query, info)
   },    
 };
 
